@@ -89,7 +89,7 @@ func customInterceptorOptions(o *options) []grpc.ServerOption {
 	}
 
 	if o.tracingEnabled {
-		opts = append(opts, grpc.StatsHandler(otelgrpc.NewClientHandler()))
+		opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	}
 
 	if o.statsHandler != nil {

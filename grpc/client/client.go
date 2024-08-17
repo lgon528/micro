@@ -4,6 +4,7 @@ package client
 import (
 	"context"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,6 +18,7 @@ type Option func(*options)
 type options struct {
 	builders           []resolver.Builder
 	isLoadBalance      bool
+	tracingEnabled     bool
 	credentials        credentials.TransportCredentials
 	statsHandler       stats.Handler
 	unaryInterceptors  []grpc.UnaryClientInterceptor
@@ -103,6 +105,10 @@ func Dial(ctx context.Context, endpoint string, opts ...Option) (*grpc.ClientCon
 		dialOptions = append(dialOptions, grpc.WithStatsHandler(o.statsHandler))
 	}
 
+	if o.tracingEnabled {
+		dialOptions = append(dialOptions, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	}
+
 	// custom unary interceptor option
 	if len(o.unaryInterceptors) > 0 {
 		dialOptions = append(dialOptions, grpc.WithChainUnaryInterceptor(o.unaryInterceptors...))
@@ -113,5 +119,5 @@ func Dial(ctx context.Context, endpoint string, opts ...Option) (*grpc.ClientCon
 		dialOptions = append(dialOptions, grpc.WithChainStreamInterceptor(o.streamInterceptors...))
 	}
 
-	return grpc.DialContext(ctx, endpoint, dialOptions...)
+	return grpc.NewClient(endpoint, dialOptions...)
 }
