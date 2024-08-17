@@ -72,7 +72,7 @@ func traceInterceptor(compName string, opts *redis.Options, logger *zap.Logger) 
 
 	return newInterceptor().
 		setBeforeProcess(func(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
-			ctx, span := tracer.Start(ctx, cmd.FullName(), nil, trace.WithAttributes(attrs...))
+			ctx, span := tracer.Start(ctx, cmd.FullName(), trace.WithAttributes(attrs...))
 			span.SetAttributes(
 				semconv.DBOperationKey.String(cmd.Name()),
 				semconv.DBStatementKey.String(cast.ToString(cmd.Args())),
