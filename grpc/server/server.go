@@ -6,6 +6,7 @@ import (
 	"net"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/stats"
@@ -27,10 +28,11 @@ type options struct {
 	streamInterceptors []grpc.StreamServerInterceptor
 	port               int
 	serviceRegisterFn  ServiceRegisterFn
+	tracingEnabled     bool
 }
 
 func defaultServerOptions() *options {
-	return &options{}
+	return &options{tracingEnabled: true}
 }
 
 func (o *options) apply(opts ...Option) {
@@ -43,6 +45,12 @@ func (o *options) apply(opts ...Option) {
 func WithSecure(credential credentials.TransportCredentials) Option {
 	return func(o *options) {
 		o.credentials = credential
+	}
+}
+
+func WithTracingEnabled(tracingEnabled bool) Option {
+	return func(o *options) {
+		o.tracingEnabled = tracingEnabled
 	}
 }
 
@@ -78,6 +86,10 @@ func customInterceptorOptions(o *options) []grpc.ServerOption {
 
 	if o.credentials != nil {
 		opts = append(opts, grpc.Creds(o.credentials))
+	}
+
+	if o.tracingEnabled {
+		opts = append(opts, grpc.StatsHandler(otelgrpc.NewClientHandler()))
 	}
 
 	if o.statsHandler != nil {
