@@ -42,6 +42,12 @@ func WithServiceDiscover(builders ...resolver.Builder) Option {
 	}
 }
 
+func WithTracingEnabled(tracingEnabled bool) Option {
+	return func(o *options) {
+		o.tracingEnabled = tracingEnabled
+	}
+}
+
 // WithLoadBalance set load balance
 func WithLoadBalance() Option {
 	return func(o *options) {
