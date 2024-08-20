@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type interceptor struct {
@@ -62,7 +61,7 @@ func (i *interceptor) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.
 	}
 }
 
-func traceInterceptor(compName string, opts *redis.Options, logger *zap.Logger) *interceptor {
+func traceInterceptor(compName string, opts *redis.Options) *interceptor {
 	tracer := otel.Tracer(compName)
 	attrs := []attribute.KeyValue{
 		semconv.NetHostPortKey.String(opts.Addr),
@@ -72,7 +71,7 @@ func traceInterceptor(compName string, opts *redis.Options, logger *zap.Logger) 
 
 	return newInterceptor().
 		setBeforeProcess(func(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
-			ctx, span := tracer.Start(ctx, cmd.FullName(), trace.WithAttributes(attrs...))
+			ctx, span := tracer.Start(ctx, cmd.FullName(), trace.WithAttributes(attrs...), trace.WithSpanKind(trace.SpanKindClient))
 			span.SetAttributes(
 				semconv.DBOperationKey.String(cmd.Name()),
 				semconv.DBStatementKey.String(cast.ToString(cmd.Args())),

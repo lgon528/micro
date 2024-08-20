@@ -2,11 +2,10 @@ package redis
 
 import (
 	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
-func NewClient(opts *redis.Options, logger *zap.Logger) *redis.Client {
+func NewClient(opts *redis.Options) *redis.Client {
 	client := redis.NewClient(opts)
-	client.AddHook(traceInterceptor("redis", opts, logger))
+	client.AddHook(traceInterceptor("redis", opts))
 	return client
 }
