@@ -91,7 +91,7 @@ func traceInterceptor(compName string, opts *redis.Options) *interceptor {
 			return nil
 		}).
 		setBeforeProcessPipeline(func(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
-			ctx, span := tracer.Start(ctx, "pipeline", nil, trace.WithAttributes(attrs...))
+			ctx, span := tracer.Start(ctx, "pipeline",  trace.WithAttributes(attrs...))
 			span.SetAttributes(
 				semconv.DBOperationKey.String(getCmdsName(cmds)),
 			)
