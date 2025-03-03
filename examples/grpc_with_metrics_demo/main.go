@@ -13,7 +13,6 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcprom "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
@@ -43,7 +42,6 @@ func main() {
 			grpcprom.WithHistogramBuckets([]float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}),
 		),
 	)
-	prometheus.MustRegister(metrics)
 
 	registerFn := func(s *grpc.Server) {
 		reflection.Register(s)
@@ -54,6 +52,7 @@ func main() {
 		registerFn,
 		server.WithPort(50052),
 		server.WithStatsHandler(otelgrpc.NewServerHandler()),
+		server.WithServerMetrics(metrics),
 		server.WithUnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
 				metrics.UnaryServerInterceptor(),
