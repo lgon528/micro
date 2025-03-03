@@ -6,6 +6,8 @@ import (
 	"net"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -29,6 +31,7 @@ type options struct {
 	port               int
 	serviceRegisterFn  ServiceRegisterFn
 	tracingEnabled     bool
+	serverMetrics      *grpc_prometheus.ServerMetrics
 }
 
 func defaultServerOptions() *options {
@@ -81,6 +84,12 @@ func WithServiceRegister(fn ServiceRegisterFn) Option {
 	}
 }
 
+func WithServerMetrics(metrics *grpc_prometheus.ServerMetrics) Option {
+	return func(o *options) {
+		o.serverMetrics = metrics
+	}
+}
+
 func customInterceptorOptions(o *options) []grpc.ServerOption {
 	var opts []grpc.ServerOption
 
@@ -129,6 +138,8 @@ func (s *GrpcServer) Start() error {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	fmt.Printf("grpc server start..., port: %v\n", s.opts.port)
+
 	if err := s.srv.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 		return err
@@ -162,6 +173,13 @@ func NewGrpcServer(registerFn RegisterFn, options ...Option) *GrpcServer {
 	// register service to target
 	if o.serviceRegisterFn != nil {
 		o.serviceRegisterFn()
+	}
+
+	// initialize metrics
+	if o.serverMetrics != nil {
+		// register to default registry
+		prometheus.MustRegister(o.serverMetrics)
+		o.serverMetrics.InitializeMetrics(srv)
 	}
 
 	return &GrpcServer{
